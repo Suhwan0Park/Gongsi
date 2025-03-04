@@ -83,7 +83,6 @@
             } else {
                 standardAmountField.textContent = "-";
             }
-            updateDisclosureStatus();
         }
 
         function filterCompanies() {
@@ -92,7 +91,10 @@
             dropdown.innerHTML = "";
             selectedIndex = -1;
             
-            if (input === "") return;
+            if (input === "") {
+                dropdown.style.display = "none";
+                return;
+            }
             
             let matches = Object.keys(companyData).filter(company => 
                 company.replace("(주)", "").startsWith(input) || company.startsWith(input)
@@ -103,6 +105,7 @@
                 matches.forEach((company, index) => {
                     const div = document.createElement("div");
                     div.textContent = company;
+                    div.setAttribute("data-index", index);
                     div.onclick = function() {
                         document.getElementById("companyInput").value = company;
                         dropdown.style.display = "none";
@@ -110,30 +113,38 @@
                     };
                     dropdown.appendChild(div);
                 });
+            } else {
+                dropdown.style.display = "none";
             }
         }
 
-        document.getElementById("companyInput").addEventListener("keydown", function(event) {
+        document.addEventListener("keydown", function(event) {
             const dropdown = document.getElementById("companyDropdown");
             const options = dropdown.getElementsByTagName("div");
             
+            if (options.length === 0 || dropdown.style.display === "none") return;
+            
             if (event.key === "ArrowDown") {
                 selectedIndex = (selectedIndex + 1) % options.length;
+                highlightOption(options);
+                event.preventDefault();
             } else if (event.key === "ArrowUp") {
                 selectedIndex = (selectedIndex - 1 + options.length) % options.length;
+                highlightOption(options);
+                event.preventDefault();
             } else if (event.key === "Enter" && selectedIndex >= 0) {
                 options[selectedIndex].click();
+                event.preventDefault();
             }
-            
-            highlightOption(options);
         });
 
         function highlightOption(options) {
             for (let i = 0; i < options.length; i++) {
                 options[i].classList.remove("active");
             }
-            if (selectedIndex >= 0) {
+            if (selectedIndex >= 0 && selectedIndex < options.length) {
                 options[selectedIndex].classList.add("active");
+                options[selectedIndex].scrollIntoView({ block: "nearest" });
             }
         }
     </script>
