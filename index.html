@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>공시 대상 계산기</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        input {
+            padding: 5px;
+            font-size: 16px;
+            width: 100%;
+            text-align: center;
+        }
+        .dropdown-container {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        .dropdown-list {
+            position: absolute;
+            width: 100%;
+            background: white;
+            border: 1px solid #ddd;
+            max-height: 150px;
+            overflow-y: auto;
+            display: none;
+        }
+        .dropdown-list div {
+            padding: 10px;
+            cursor: pointer;
+        }
+        .dropdown-list div:hover, .dropdown-list div.active {
+            background-color: #f0f0f0;
+        }
+    </style>
+    <script>
+        let selectedIndex = -1;
+        const companyData = {
+            "자이씨앤에이(주)": [251212000000, 20000000000],
+            "(주)지씨에스": [16020000000, 431000000],
+            "(주)지에프에스": [200980000000, 5010000000],
+            "강남메트로(주)": [50000000000, 10000000000],
+            "구미맑은물(주)": [70000000000, 12000000000]
+        };
+
+        function updateStandardAmount(company) {
+            const standardAmountField = document.getElementById("standardAmount");
+            if (companyData[company]) {
+                const [capitalTotal, capitalFund] = companyData[company];
+                const maxCapital = Math.max(capitalTotal, capitalFund);
+                const calculatedAmount = maxCapital * 0.05;
+                standardAmountField.textContent = calculatedAmount.toLocaleString() + " 원";
+            } else {
+                standardAmountField.textContent = "-";
+            }
+            updateDisclosureStatus();
+        }
+
+        function formatTransactionAmount() {
+            const inputField = document.getElementById("transactionAmount");
+            let value = inputField.value.replace(/,/g, "");
+            if (!isNaN(value) && value !== "") {
+                inputField.value = parseInt(value).toLocaleString();
+            }
+            updateDisclosureStatus();
+        }
+
+        function updateDisclosureStatus() {
+            const standardAmountText = document.getElementById("standardAmount").textContent.replace(/[^0-9]/g, "");
+            const transactionAmountText = document.getElementById("transactionAmount").value.replace(/,/g, "");
+            const disclosureStatusField = document.getElementById("disclosureStatus");
+            
+            const standardAmount = parseInt(standardAmountText) || 0;
+            const transactionAmount = parseInt(transactionAmountText) || 0;
+            
+            if (transactionAmount >= 10000000000) {
+                disclosureStatusField.textContent = "공시 대상";
+            } else if (transactionAmount < 500000000) {
+                disclosureStatusField.textContent = "공시 비대상";
+            } else if (transactionAmount >= standardAmount && standardAmount > 0) {
+                disclosureStatusField.textContent = "공시 대상";
+            } else {
+                disclosureStatusField.textContent = "공시 비대상";
+            }
+        }
+
+        function filterCompanies() {
+            const input = document.getElementById("companyInput").value.replace("(주)", "").trim();
+            const dropdown = document.getElementById("companyDropdown");
+            dropdown.innerHTML = "";
+            dropdown.style.display = "none";
+            selectedIndex = -1;
+            
+            if (input === "") return;
+            
+            let matches = Object.keys(companyData).filter(company => 
+                company.replace("(주)", "").startsWith(input) || company.startsWith(input)
+            );
+            
+            if (matches.length > 0) {
+                dropdown.style.display = "block";
+                matches.forEach((company, index) => {
+                    const div = document.createElement("div");
+                    div.textContent = company;
+                    div.onclick = function() {
+                        document.getElementById("companyInput").value = company;
+                        dropdown.style.display = "none";
+                        updateStandardAmount(company);
+                    };
+                    dropdown.appendChild(div);
+                });
+            }
+        }
+
+        document.getElementById("companyInput").addEventListener("keydown", function(event) {
+            const dropdown = document.getElementById("companyDropdown");
+            const options = dropdown.getElementsByTagName("div");
+            
+            if (event.key === "ArrowDown") {
+                selectedIndex = (selectedIndex + 1) % options.length;
+                highlightOption(options);
+                event.preventDefault();
+            } else if (event.key === "ArrowUp") {
+                selectedIndex = (selectedIndex - 1 + options.length) % options.length;
+                highlightOption(options);
+                event.preventDefault();
+            } else if (event.key === "Enter" && selectedIndex >= 0) {
+                options[selectedIndex].click();
+                event.preventDefault();
+            }
+        });
+
+        function highlightOption(options) {
+            for (let i = 0; i < options.length; i++) {
+                options[i].classList.remove("active");
+            }
+            if (selectedIndex >= 0) {
+                options[selectedIndex].classList.add("active");
+            }
+        }
+    </script>
+</head>
+<body>
+    <h2>공시 대상 계산기</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>회사명</th>
+                <th>기준금액 (원)</th>
+                <th>금번 거래금액 (원)</th>
+                <th>공시대상 여부</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <div class="dropdown-container">
+                        <input type="text" id="companyInput" placeholder="회사명 입력" oninput="filterCompanies()">
+                        <div id="companyDropdown" class="dropdown-list"></div>
+                    </div>
+                </td>
+                <td id="standardAmount">-</td>
+                <td><input type="text" id="transactionAmount" placeholder="거래금액 입력" oninput="formatTransactionAmount()"></td>
+                <td id="disclosureStatus">-</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>
