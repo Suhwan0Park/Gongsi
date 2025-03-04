@@ -86,43 +86,10 @@
             updateDisclosureStatus();
         }
 
-        function formatTransactionAmount() {
-            const inputField = document.getElementById("transactionAmount");
-            let value = inputField.value.replace(/,/g, "");
-            if (!isNaN(value) && value !== "") {
-                inputField.value = parseInt(value).toLocaleString();
-            }
-            updateDisclosureStatus();
-        }
-
-        function updateDisclosureStatus() {
-            const standardAmountText = document.getElementById("standardAmount").textContent.replace(/[^0-9]/g, "");
-            const transactionAmountText = document.getElementById("transactionAmount").value.replace(/,/g, "");
-            const disclosureStatusField = document.getElementById("disclosureStatus");
-            
-            const standardAmount = parseInt(standardAmountText) || 0;
-            const transactionAmount = parseInt(transactionAmountText) || 0;
-            
-            if (transactionAmount >= 10000000000) {
-                disclosureStatusField.textContent = "공시 대상";
-                disclosureStatusField.classList.add("highlight");
-            } else if (transactionAmount < 500000000) {
-                disclosureStatusField.textContent = "공시 비대상";
-                disclosureStatusField.classList.remove("highlight");
-            } else if (transactionAmount >= standardAmount && standardAmount > 0) {
-                disclosureStatusField.textContent = "공시 대상";
-                disclosureStatusField.classList.add("highlight");
-            } else {
-                disclosureStatusField.textContent = "공시 비대상";
-                disclosureStatusField.classList.remove("highlight");
-            }
-        }
-
         function filterCompanies() {
             const input = document.getElementById("companyInput").value.replace("(주)", "").trim();
             const dropdown = document.getElementById("companyDropdown");
             dropdown.innerHTML = "";
-            dropdown.style.display = "none";
             selectedIndex = -1;
             
             if (input === "") return;
@@ -143,6 +110,30 @@
                     };
                     dropdown.appendChild(div);
                 });
+            }
+        }
+
+        document.getElementById("companyInput").addEventListener("keydown", function(event) {
+            const dropdown = document.getElementById("companyDropdown");
+            const options = dropdown.getElementsByTagName("div");
+            
+            if (event.key === "ArrowDown") {
+                selectedIndex = (selectedIndex + 1) % options.length;
+            } else if (event.key === "ArrowUp") {
+                selectedIndex = (selectedIndex - 1 + options.length) % options.length;
+            } else if (event.key === "Enter" && selectedIndex >= 0) {
+                options[selectedIndex].click();
+            }
+            
+            highlightOption(options);
+        });
+
+        function highlightOption(options) {
+            for (let i = 0; i < options.length; i++) {
+                options[i].classList.remove("active");
+            }
+            if (selectedIndex >= 0) {
+                options[selectedIndex].classList.add("active");
             }
         }
     </script>
@@ -167,7 +158,7 @@
                     </div>
                 </td>
                 <td id="standardAmount">-</td>
-                <td><input type="text" id="transactionAmount" placeholder="거래금액 입력" oninput="formatTransactionAmount()"></td>
+                <td><input type="text" id="transactionAmount" placeholder="거래금액 입력"></td>
                 <td id="disclosureStatus">-</td>
             </tr>
         </tbody>
